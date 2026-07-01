@@ -19,6 +19,15 @@ class ShortenerUrlsController < ApplicationController
   end
 
   def decode
-    render json: { short_url: 'test' }
+    url = ShortenedUrl.find_by(short_code: params[:short_code])
+    if url.nil?
+      return render_error(
+        404,
+        Errors::ErrorCodes::RECORD_NOT_FOUND,
+        'Short code not found'
+      )
+    end
+
+    render_success({ url: url.original_url })
   end
 end

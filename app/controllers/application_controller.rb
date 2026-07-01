@@ -29,4 +29,8 @@ class ApplicationController < ActionController::API
       }
     }, status: status
   end
+
+  def render_success(data = {}, status: :ok)
+    render json: data, status: status
+  end
 end
