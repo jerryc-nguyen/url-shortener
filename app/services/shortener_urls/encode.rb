@@ -27,6 +27,8 @@ class ShortenerUrls::Encode
     end
   end
 
+  private
+
   def unique_short_code
     loop do
       code = FriendlyCodeGenerator.generate
