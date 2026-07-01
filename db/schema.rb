@@ -13,8 +13,12 @@
 ActiveRecord::Schema[8.1].define(version: 2026_07_01_033053) do
   create_table "shortened_urls", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.string "original_url"
+    t.string "idempotency_key"
+    t.string "original_url", null: false
     t.string "short_code"
     t.datetime "updated_at", null: false
+    t.index ["idempotency_key"], name: "index_shortened_urls_on_idempotency_key", unique: true
+    t.index ["original_url"], name: "index_shortened_urls_on_original_url"
+    t.index ["short_code"], name: "index_shortened_urls_on_short_code", unique: true
   end
 end
