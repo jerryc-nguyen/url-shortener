@@ -9,7 +9,7 @@ class ShortenerUrls::Encode
 
   def call
     if original_url.blank?
-      error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: 'URL is required' }
+      error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: Errors::ErrorMessages::URL_REQUIRED }
       return Result.new(success: false, url: nil, error: error)
     end
 

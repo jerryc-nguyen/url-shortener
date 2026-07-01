@@ -6,7 +6,6 @@ class ShortenerUrlsController < ApplicationController
 
     if result.success
       render json: {
-        id: result.url.id,
         short_code: result.url.short_code
       }
     else
@@ -24,7 +23,7 @@ class ShortenerUrlsController < ApplicationController
       return render_error(
         404,
         Errors::ErrorCodes::RECORD_NOT_FOUND,
-        'Short code not found'
+        Errors::ErrorMessages::SHORT_CODE_NOT_FOUND
       )
     end
 
