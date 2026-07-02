@@ -10,10 +10,7 @@ class ShortenerUrls::Encode
   end
 
   def call
-    if original_url.blank?
-      error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: Errors::ErrorMessages::URL_REQUIRED }
-      return Result.new(success: false, url: nil, error: error)
-    end
+    return empty_url_error_result if original_url.blank?
 
     url = ShortenedUrl.find_by(
       idempotency_key: idempotency_key
@@ -33,7 +30,7 @@ class ShortenerUrls::Encode
           raise e
         end
       rescue ActiveRecord::RecordInvalid => e
-        return handle_validation_error(e)
+        return validation_error_result(e)
       end
     end
 
@@ -41,6 +38,11 @@ class ShortenerUrls::Encode
   end
 
   private
+
+  def empty_url_error_result
+    error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: Errors::ErrorMessages::URL_REQUIRED }
+    Result.new(success: false, url: nil, error: error)
+  end
 
   def create_shortened_url
     ShortenedUrl.create!(
@@ -58,7 +60,7 @@ class ShortenerUrls::Encode
     e.message.include?('short_code')
   end
 
-  def handle_validation_error(e)
+  def validation_error_result(e)
     error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: e.record.errors.full_messages.to_sentence }
     Result.new(success: false, url: nil, error: error)
   end

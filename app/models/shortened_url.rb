@@ -18,4 +18,5 @@
 
 class ShortenedUrl < ApplicationRecord
   validates :original_url, presence: true, format: URI.regexp(%w[http https])
+  validates :original_url, length: { maximum: 2000 }
 end
