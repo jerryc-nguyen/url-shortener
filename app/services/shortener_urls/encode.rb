@@ -1,6 +1,8 @@
 class ShortenerUrls::Encode
   attr_reader :original_url
 
+  MAX_RETRIES = 5
+
   Result = Struct.new(:success, :url, :error)
 
   def initialize(original_url:)
@@ -13,31 +15,54 @@ class ShortenerUrls::Encode
       return Result.new(success: false, url: nil, error: error)
     end
 
-    url = ShortenedUrl.find_or_create_by(
-      idempotency_key: idempotency_key(original_url),
+    url = ShortenedUrl.find_by(
+      idempotency_key: idempotency_key
     )
-    url.original_url ||= original_url
-    url.short_code ||= unique_short_code
 
-    if url.save
-      Result.new(success: true, url: url, error: nil)
-    else
-      error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: url.errors.full_messages.to_sentence }
-      Result.new(success: false, url: nil, error: error)
+    if url.present?
+      return success(url)
     end
+
+    MAX_RETRIES.times do
+      begin
+        url = ShortenedUrl.create!(
+                original_url: original_url,
+                short_code: FriendlyCodeGenerator.generate,
+                idempotency_key: idempotency_key
+              )
+
+        return success(url)
+      rescue ActiveRecord::RecordNotUnique => e
+        if e.message.include?('idempotency_key')
+          return success(ShortenedUrl.find_by!(idempotency_key: idempotency_key))
+        elsif e.message.include?('short_code')
+          next
+        else
+          raise 'Unknown unique constraint violation: ' + e.message
+        end
+      rescue ActiveRecord::RecordInvalid => e
+        error = { code: Errors::ErrorCodes::VALIDATION_ERROR, message: e.record.errors.full_messages.to_sentence }
+        return Result.new(success: false, url: nil, error: error)
+      end
+    end
+
+    Result.new(
+      success: false,
+      url: nil,
+      error: {
+        code: Errors::ErrorCodes::INTERNAL_SERVER_ERROR,
+        message: 'Unable to generate unique short code'
+      }
+    )
   end
 
   private
 
-  def unique_short_code
-    loop do
-      code = FriendlyCodeGenerator.generate
-
-      return code unless ShortenedUrl.exists?(short_code: code)
-    end
+  def success(url)
+    Result.new(success: true, url: url, error: nil)
   end
 
-  def idempotency_key(original_url)
-    Digest::SHA256.hexdigest(original_url)
+  def idempotency_key
+    @idempotency_key ||= Digest::SHA256.hexdigest(original_url)
   end
 end
