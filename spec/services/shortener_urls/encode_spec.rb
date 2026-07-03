@@ -19,7 +19,7 @@ RSpec.describe ShortenerUrls::Encode do
         ShortenedUrl.create!(
           original_url: original_url,
           short_code: 'abc123',
-          idempotency_key: Digest::SHA256.hexdigest(original_url)
+          idempotency_key: Digest::MD5.hexdigest(original_url)
         )
       end
       it 'return existed short code' do
@@ -42,7 +42,7 @@ RSpec.describe ShortenerUrls::Encode do
         ShortenedUrl.create!(
           original_url: original_url,
           short_code: 'abc123',
-          idempotency_key: Digest::SHA256.hexdigest(original_url)
+          idempotency_key: Digest::MD5.hexdigest(original_url)
         )
       end
 

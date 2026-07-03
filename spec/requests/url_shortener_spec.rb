@@ -42,7 +42,7 @@ RSpec.describe 'ShortenerUrls API', type: :request do
     end
   end
 
-  describe 'POST /decode' do
+  describe 'GET /decode' do
     let!(:shortened_url) do
       ShortenedUrl.create!(
         original_url: 'https://google.com',
@@ -53,7 +53,7 @@ RSpec.describe 'ShortenerUrls API', type: :request do
 
     context 'when the short code exists' do
       it 'returns the original url' do
-        post '/decode', params: { short_code: shortened_url.short_code }
+        get '/decode', params: { short_code: shortened_url.short_code }
         expect(response).to have_http_status(:ok)
 
         json = JSON.parse(response.body)
@@ -63,7 +63,7 @@ RSpec.describe 'ShortenerUrls API', type: :request do
 
     context 'when the short code does not exist' do
       it 'returns not found error' do
-        post '/decode', params: { short_code: '404cod' }
+        get '/decode', params: { short_code: '404cod' }
         expect(response).to have_http_status(:not_found)
 
         json = JSON.parse(response.body)
@@ -74,7 +74,7 @@ RSpec.describe 'ShortenerUrls API', type: :request do
 
     context 'when the short code invalid' do
       it 'returns invalid message' do
-        post '/decode', params: { short_code: 'invalid-code' }
+        get '/decode', params: { short_code: 'invalid-code' }
         expect(response).to have_http_status(:unprocessable_entity)
 
         json = JSON.parse(response.body)
