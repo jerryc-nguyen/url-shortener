@@ -147,6 +147,7 @@ I use Rails' built-in methods to prevent SQL injection, for example:
 
 `ShortenedUrl.find_by(short_code: params[:short_code])`
 ```
+
 ## Scalability, race condition and collision
 1. Don't generate new shorten url for existed url
 ```
