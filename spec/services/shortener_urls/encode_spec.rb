@@ -56,29 +56,24 @@ RSpec.describe ShortenerUrls::Encode do
       end
     end
 
-    context 'when duplicate short code' do
-      let!(:shortened_url) do
-        ShortenedUrl.create!(
-          original_url: original_url,
-          short_code: 'abc123',
-          idempotency_key: Digest::SHA256.hexdigest(original_url)
-        )
-      end
-      before do
-        allow(ShortenedUrl).to receive(:create!).and_raise(ActiveRecord::RecordNotUnique.new('duplicate short_code'))
-      end
-      it 'retry create url' do
-        expect(result.success).to be(true)
-        expect(result.url.short_code).to eq(shortened_url.short_code)
-      end
-    end
-
     context 'when create url failed validation' do
       let(:original_url) { 'invalid-url' }
+
       it 'return validation failed when create failed validation' do
         expect(result.success).to be(false)
         expect(result.error[:code]).to eq(Errors::ErrorCodes::VALIDATION_ERROR)
         expect(result.error[:message]).to be_present
+      end
+    end
+
+    context 'when reach all retries' do
+      before do
+        allow(ShortenedUrl).to receive(:create!).and_raise(ActiveRecord::RecordNotUnique.new('duplicate short_code'))
+      end
+      it 'return default error' do
+        expect(result.success).to be(false)
+        expect(result.error[:code]).to eq(Errors::ErrorCodes::INTERNAL_SERVER_ERROR)
+        expect(result.error[:message]).to eq('Unable to generate unique short code')
       end
     end
   end

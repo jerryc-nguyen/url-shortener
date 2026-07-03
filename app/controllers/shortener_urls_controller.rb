@@ -5,15 +5,9 @@ class ShortenerUrlsController < ApplicationController
     ).call
 
     if result.success
-      render json: {
-        short_code: result.url.short_code
-      }
+      render_success({ short_code: result.url.short_code })
     else
-      render_error(
-        422,
-        result.error[:code],
-        result.error[:message]
-      )
+      render_error(422, result.error[:code], result.error[:message])
     end
   end
 

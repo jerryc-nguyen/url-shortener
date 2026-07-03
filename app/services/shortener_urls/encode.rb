@@ -12,23 +12,15 @@ class ShortenerUrls::Encode
   def call
     return empty_url_error_result if original_url.blank?
 
-    url = ShortenedUrl.find_by(
-      idempotency_key: idempotency_key
-    )
-
-    return success(url) if url.present?
-
     MAX_RETRIES.times do
+      if (url = ShortenedUrl.find_by(idempotency_key: idempotency_key))
+        return success(url)
+      end
+
       begin
         return success(create_shortened_url)
       rescue ActiveRecord::RecordNotUnique => e
-        if duplicate_idempotency_key?(e)
-          return success(ShortenedUrl.find_by!(idempotency_key: idempotency_key))
-        elsif duplicate_short_code?(e)
-          next
-        else
-          raise e
-        end
+        next
       rescue ActiveRecord::RecordInvalid => e
         return validation_error_result(e)
       end
@@ -50,14 +42,6 @@ class ShortenerUrls::Encode
       short_code: FriendlyCodeGenerator.generate,
       idempotency_key: idempotency_key
     )
-  end
-
-  def duplicate_idempotency_key?(e)
-    e.message.include?('idempotency_key')
-  end
-
-  def duplicate_short_code?(e)
-    e.message.include?('short_code')
   end
 
   def validation_error_result(e)
