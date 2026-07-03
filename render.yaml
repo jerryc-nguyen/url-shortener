@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: url-shortener
+    runtime: image
+    repo: https://github.com/REPLACE_WITH_YOUR_GITHUB_REPO
+    plan: free
+    envVars:
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: PORT
+        value: 10000
+      - key: RAILS_LOG_LEVEL
+        value: info
+      - key: SOLID_QUEUE_IN_PUMA
+        value: 'true'
