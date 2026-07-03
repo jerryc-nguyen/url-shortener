@@ -63,12 +63,23 @@ RSpec.describe 'ShortenerUrls API', type: :request do
 
     context 'when the short code does not exist' do
       it 'returns not found error' do
-        post '/decode', params: { short_code: '404code' }
+        post '/decode', params: { short_code: '404cod' }
         expect(response).to have_http_status(:not_found)
 
         json = JSON.parse(response.body)
         expect(json['error']['code']).to eq(Errors::ErrorCodes::RECORD_NOT_FOUND)
         expect(json['error']['message']).to eq(Errors::ErrorMessages::SHORT_CODE_NOT_FOUND)
+      end
+    end
+
+    context 'when the short code invalid' do
+      it 'returns invalid message' do
+        post '/decode', params: { short_code: 'invalid-code' }
+        expect(response).to have_http_status(:unprocessable_entity)
+
+        json = JSON.parse(response.body)
+        expect(json['error']['code']).to eq(Errors::ErrorCodes::VALIDATION_ERROR)
+        expect(json['error']['message']).to eq(Errors::ErrorMessages::SHORT_CODE_INVALID)
       end
     end
   end
