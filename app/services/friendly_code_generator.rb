@@ -3,7 +3,7 @@ class FriendlyCodeGenerator
 
   def self.generate(length = 6)
     length.times.map do
-      CHARS[SecureRandom.random_number(CHARS.length)]
+      CHARS[rand(CHARS.length)]
     end.join
   end
 end

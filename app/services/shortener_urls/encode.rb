@@ -14,11 +14,11 @@ class ShortenerUrls::Encode
 
     MAX_RETRIES.times do
       if (url = ShortenedUrl.find_by(idempotency_key: idempotency_key))
-        return success(url)
+        return success_result(url)
       end
 
       begin
-        return success(create_shortened_url)
+        return success_result(create_shortened_url)
       rescue ActiveRecord::RecordNotUnique => e
         next
       rescue ActiveRecord::RecordInvalid => e
@@ -60,11 +60,11 @@ class ShortenerUrls::Encode
     )
   end
 
-  def success(url)
+  def success_result(url)
     Result.new(success: true, url: url, error: nil)
   end
 
   def idempotency_key
-    @idempotency_key ||= Digest::SHA256.hexdigest(original_url)
+    @idempotency_key ||= Digest::MD5.hexdigest(original_url)
   end
 end
