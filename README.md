@@ -98,11 +98,9 @@ GET /decode?short_code=A3RxY2
 
 ```json
 {
-  "success": true,
-  "data": {
-    "url": "https://example.com"
-  }
+  "url": "https://example.com"
 }
+
 ```
 
 #### Error Responses
@@ -145,39 +143,46 @@ I add validation only accept valid url: http, https and limit the length of the 
 ```
 3. User can send sql injection params to server
 ```
-I use default rails's built in method that prevent sql injection like: ShortenedUrl.find_by(short_code: params[:short_code]) 
+I use Rails' built-in methods to prevent SQL injection, for example:
+
+`ShortenedUrl.find_by(short_code: params[:short_code])`
 ```
 ## Scalability, race condition and collision
 1. Don't generate new shorten url for existed url
 ```
-My idea is only generate shorten url one time for each user submit url. By this way, the table rows will not increase by the user request.
-So I design db table add `idempotency_key` and add uniq index to this field to prevent duplicate
-The `idempotency_key` is md5 hashing of the original url that make the 32 chars string used to check existed shortened or not 
+My idea is to generate a shortened URL only once for each submitted URL. This way, the number of rows in the table will not increase with repeated requests for the same URL.
+
+So I designed the database table to include an `idempotency_key` column and added a unique index on this field to prevent duplicates.
+
+The `idempotency_key` is the MD5 hash of the original URL, which generates a 32-character string used to check whether a shortened URL already exists.
 ```
 
 2. Scale up later when we want to manage shorten urls by user
 ```
-Current implement only support generate shorten url one time per original url. But later if business requirement allow user to logged in then manage their generated urls we can add user_id to `shortened_urls` table. And update logic to generate idempotency_key like `Digest::MD5.hexdigest("#{user_id}#{original_url})`
+The current implementation only supports generating one shortened URL per original URL. However, if a future business requirement allow user to logged in then manage their generated urls we can add a user_id column to `shortened_urls` table. And update logic to generate idempotency_key like `Digest::MD5.hexdigest("#{user_id}#{original_url})`
 ```
 
 3. How to generate shorten code
 ```
 Here is logic: app/services/friendly_code_generator.rb
 
-I want to generate the shorten code that easy to read by user so I don't generate the characters that look alike: 0, O, I, l
+I want to generate a shortened code that is easy for users to read, so I don't generate characters that look alike: 0, O, I, l.
 
 So I build the string contains all normal chars, uppercase chars, numbers exclude 0, O, I, l
 
-Then I pick random X chars - default is 6 in the string to build the shorten code 
+Then I pick random X chars (default is 6) from the string to build the shorten code 
 ```
 
 4. Handle collision
 ```
-By default I generate 6 chars that have space about 3 billion records (58^6) but because random generate it so still have possibility of duplication. So I add unique index in db for field short_code and catch the db raise when create record then retry.
+By default, I generate a 6-character code, which provides a space of about 3 billion combinations (58^6). However, because the code is generated randomly, there is still a possibility of duplication. So I add a unique index in the database for the `short_code` field and catch the database exception when creating the record, then retry.
 
-I set default retry times is 5 and add error log when it reach 5 retries but can't generate the unique short_code then I will increase the short code generate from 6 to 7 chars and so on
+I set the default retry count to 5 and add an error log when it reaches 5 retries but still can't generate a unique `short_code`. Then I will increase the generated short code length from 6 to 7 characters, and so on.
 ```
 
 6. Race condition 
-There is case one url is submitted by 2 or more requests in same time
-I add uniq index for `idempotency_key` so it will prevent create duplicate records
+```
+There is a case where the same URL is submitted by two or more requests at the same time.
+
+I add a unique index for `idempotency_key`, so it prevents duplicate records from being created.
+```
