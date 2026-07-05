@@ -140,6 +140,10 @@ For /decode, we limit 20 requests per minutes
 2. User can send invalid url or try to send fake url with large payload to flood our database
 ```
 I add validation only accept valid url: http, https and limit the length of the url to 2000 characters
+
+But this way does not fully protect our service when a user sends a fake URL - a non-live URL or domain. 
+So we should check whether the URL is live or not by background job, then count the invalid URLs per hour for user's IP. 
+If a user sends X invalid URLs per hour, then we should block the user's requests by IP + remove invalid records.
 ```
 3. User can send sql injection params to server
 ```
